@@ -18,11 +18,11 @@ interface SourceState {
 
 const demoClips = [
   {
-    label: "Demo: higher risk",
+    label: "Demo: low risk",
     path: "/demo/higher-risk.wav"
   },
   {
-    label: "Demo: healthy voice",
+    label: "Demo: high risk",
     path: "/demo/healthy.wav"
   }
 ];
