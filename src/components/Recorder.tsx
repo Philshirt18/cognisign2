@@ -72,7 +72,10 @@ const Recorder = ({ onComplete, onError }: RecorderProps) => {
   return (
     <div className="recorder">
       {!supported ? (
-        <p className="hint">Recording is not supported in this browser. Please upload a clip instead.</p>
+        <p className="hint">
+          Recording isn&apos;t available in this preview or browser. In the published app this
+          microphone recorder will work; for now, please upload a file or try a demo clip.
+        </p>
       ) : (
         <div className="controls">
           <button type="button" onClick={startRecording} disabled={recording}>

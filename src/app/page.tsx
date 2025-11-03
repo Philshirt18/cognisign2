@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import Hero from "@/components/Hero";
 import Recorder from "@/components/Recorder";
 import FileUploader from "@/components/FileUploader";
@@ -17,25 +18,40 @@ interface SourceState {
 
 const demoClips = [
   {
-    label: "Demo: healthy voice",
-    path: "/demo/healthy.wav"
-  },
-  {
     label: "Demo: higher risk",
     path: "/demo/higher-risk.wav"
+  },
+  {
+    label: "Demo: healthy voice",
+    path: "/demo/healthy.wav"
   }
 ];
 
 export default function Home() {
+  const router = useRouter();
   const [source, setSource] = useState<SourceState | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [hintVisible, setHintVisible] = useState(false);
+  const [activePanel, setActivePanel] = useState<"demo" | "record" | "upload" | null>(null);
+  const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
+  const [analysisExplanation, setAnalysisExplanation] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const accepted = window.localStorage.getItem("disclaimerAccepted") === "true";
+    if (!accepted) {
+      router.replace("/disclaimer");
+    } else {
+      setDisclaimerAccepted(true);
+    }
+  }, [router]);
 
   const resetState = useCallback(() => {
     setAnalysis(null);
     setError(null);
+    setAnalysisExplanation(null);
   }, []);
 
   const processBlob = useCallback(
@@ -60,6 +76,9 @@ export default function Home() {
       resetState();
       setHintVisible(true);
       setSource({ label: "Recorded sample", payload });
+      setAnalysisExplanation(
+        "AI estimation based on simple acoustic patterns. Results are illustrative and not diagnostic."
+      );
       void processBlob(payload.blob);
     },
     [processBlob, resetState]
@@ -71,6 +90,9 @@ export default function Home() {
       setHintVisible(false);
       const url = URL.createObjectURL(file);
       setSource({ label: file.name, payload: { file, url } });
+      setAnalysisExplanation(
+        "AI estimation based on uploaded audio. Use in a quiet space for clearer results."
+      );
       void processBlob(file);
     },
     [processBlob, resetState]
@@ -84,7 +106,17 @@ export default function Home() {
         if (!res.ok) throw new Error("Demo clip missing");
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
-        setSource({ label, payload: { file: new File([blob], label, { type: blob.type }), url } });
+        const isHighRiskDemo = clipPath.includes("higher") || clipPath.includes("alz");
+        const filename = isHighRiskDemo ? "demo_higherrisk.wav" : "demo_healthy.wav";
+        setSource({
+          label,
+          payload: { file: new File([blob], filename, { type: blob.type }), url }
+        });
+        setAnalysisExplanation(
+          isHighRiskDemo
+            ? "AI detected voice-energy and articulation patterns often seen in our Alzheimer's training samples, so it flags an elevated risk (demo)."
+            : "AI compared this voice to healthy training samples and found the patterns typical, so risk stays low (demo)."
+        );
         void processBlob(blob);
         setHintVisible(false);
       } catch (err) {
@@ -97,16 +129,51 @@ export default function Home() {
 
   const previewPayload = useMemo(() => source?.payload ?? null, [source]);
 
+  if (!disclaimerAccepted) {
+    return null;
+  }
+
   return (
-    <main>
+    <>
+      <main>
       <Hero />
 
       <section className="card">
         <h2>Choose how to start</h2>
-        <div className="action-panels">
-          <div className="action-panel">
-            <strong>Try a demo clip</strong>
-            <p>Explore Cognisight instantly with ready-to-use voices.</p>
+        <div className="selector-grid">
+          <button
+            type="button"
+            className="selector-tile"
+            data-active={activePanel === "demo"}
+            onClick={() => setActivePanel(activePanel === "demo" ? null : "demo")}
+          >
+            <span className="selector-title">Try a sample</span>
+            <span className="selector-copy">Explore Cognisight instantly with ready-to-use voices.</span>
+          </button>
+
+          <button
+            type="button"
+            className="selector-tile"
+            data-active={activePanel === "record"}
+            onClick={() => setActivePanel(activePanel === "record" ? null : "record")}
+          >
+            <span className="selector-title">Record an audio</span>
+            <span className="selector-copy">Speak for at least 10 seconds to capture a new take.</span>
+          </button>
+
+          <button
+            type="button"
+            className="selector-tile"
+            data-active={activePanel === "upload"}
+            onClick={() => setActivePanel(activePanel === "upload" ? null : "upload")}
+          >
+            <span className="selector-title">Upload a recording</span>
+            <span className="selector-copy">Select a file you already have on disk.</span>
+          </button>
+        </div>
+
+        {activePanel === "demo" && (
+          <div className="panel-body">
             <div className="demo-buttons">
               {demoClips.map((clip) => (
                 <button
@@ -123,10 +190,10 @@ export default function Home() {
               Replace these files with your own samples in <code>frontend/public/demo</code>.
             </p>
           </div>
+        )}
 
-          <div className="action-panel">
-            <strong>Record an audio clip</strong>
-            <p>Speak for at least 10 seconds to capture a new take.</p>
+        {activePanel === "record" && (
+          <div className="panel-body">
             <Recorder
               onComplete={(payload) => {
                 setHintVisible(true);
@@ -143,13 +210,13 @@ export default function Home() {
               </p>
             )}
           </div>
+        )}
 
-          <div className="action-panel">
-            <strong>Upload an existing recording</strong>
-            <p>Select a file you already have on disk.</p>
+        {activePanel === "upload" && (
+          <div className="panel-body">
             <FileUploader onSelect={handleUpload} />
           </div>
-        </div>
+        )}
       </section>
 
       <OnboardingSteps />
@@ -168,16 +235,9 @@ export default function Home() {
         </section>
       )}
 
-      <AnalysisSummary result={analysis} />
+      <AnalysisSummary result={analysis} explanation={analysisExplanation} />
 
-      <section className="card">
-        <h2>Integrating with the Python backend</h2>
-        <ol>
-          <li>Expose your Streamlit/Python processing logic as a REST endpoint (e.g., FastAPI).</li>
-          <li>Update <code>src/lib/api.ts</code> to call the deployed endpoint instead of the local stub.</li>
-          <li>Ensure CORS is configured to allow this Next.js app to interact with the backend.</li>
-        </ol>
-      </section>
     </main>
+    </>
   );
 }

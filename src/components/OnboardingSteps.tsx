@@ -70,8 +70,8 @@ const OnboardingSteps = () => {
         {scriptOpen && (
           <div className="script-content">
             <p>
-              "We value the time you take to check on your brain health. My name is ____.
-              Today I feel _____. I can remember a recent moment that made me smile."
+              &ldquo;We value the time you take to check on your brain health. My name is ____.
+              Today I feel _____. I can remember a recent moment that made me smile.&rdquo;
             </p>
           </div>
         )}

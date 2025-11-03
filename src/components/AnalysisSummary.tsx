@@ -2,6 +2,7 @@ import type { AnalysisResult } from "@/types";
 
 interface Props {
   result: AnalysisResult | null;
+  explanation?: string | null;
 }
 
 const badgeColors: Record<string, string> = {
@@ -10,7 +11,7 @@ const badgeColors: Record<string, string> = {
   High: "#FF6B6B"
 };
 
-const AnalysisSummary = ({ result }: Props) => {
+const AnalysisSummary = ({ result, explanation }: Props) => {
   if (!result) {
     return (
       <section className="card">
@@ -29,6 +30,7 @@ const AnalysisSummary = ({ result }: Props) => {
         </div>
         <p className="probability">Probability: {(result.probability * 100).toFixed(1)}%</p>
         <p className="suggestion">{result.suggestion}</p>
+        {explanation && <p className="explanation">{explanation}</p>}
       </div>
       <h3>Quality checks</h3>
       <ul className="qc-list">

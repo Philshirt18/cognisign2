@@ -13,12 +13,12 @@ const AudioPreview = ({ source }: Props) => {
       setActiveUrl(null);
       return;
     }
-    if ("url" in source) {
-      setActiveUrl(source.url);
-    } else {
+    if ("file" in source) {
       const url = URL.createObjectURL(source.file);
       setActiveUrl(url);
       return () => URL.revokeObjectURL(url);
+    } else {
+      setActiveUrl(source.url);
     }
   }, [source]);
 
