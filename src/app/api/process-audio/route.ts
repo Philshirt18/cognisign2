@@ -24,8 +24,9 @@ export async function POST(request: Request) {
     : null;
 
   const probability =
-    presetProbability ??
-    Math.min(0.19, Math.max(0.12, (bytes.length % 1000) / 1000 + 0.2));
+    presetProbability !== null
+      ? presetProbability
+      : Math.min(0.19, Math.max(0.12, (bytes.length % 1000) / 1000 + 0.2));
 
   const bucket = probability < 0.33 ? "Low" : probability < 0.66 ? "Medium" : "High";
 
