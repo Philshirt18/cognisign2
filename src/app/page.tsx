@@ -219,7 +219,7 @@ export default function Home() {
         )}
       </section>
 
-      <OnboardingSteps />
+      {activePanel === "record" && <OnboardingSteps />}
 
       <AudioPreview source={previewPayload} />
 
