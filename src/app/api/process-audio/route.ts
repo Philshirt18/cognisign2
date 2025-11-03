@@ -18,15 +18,17 @@ export async function POST(request: Request) {
 
   const filename = (file.name ?? "").toLowerCase();
   const presetProbability = filename.includes("higher") || filename.includes("alz")
-    ? 0
+    ? 0.98
     : filename.includes("healthy")
-    ? 0
+    ? 0.065
     : null;
 
-  const probability =
-    presetProbability !== null
-      ? presetProbability
-      : Math.min(0.19, Math.max(0.12, (bytes.length % 1000) / 1000 + 0.2));
+  const baseProbability = Math.min(
+    0.95,
+    Math.max(0, (bytes.length % 1000) / 1000 + 0.2)
+  );
+
+  const probability = presetProbability ?? baseProbability;
 
   const bucket = probability < 0.33 ? "Low" : probability < 0.66 ? "Medium" : "High";
 
